@@ -1,5 +1,5 @@
 # Xpresser/Env
-##### This package can be used by in any project.
+##### This package can be used in any project, must not be xpresser framework related.
 
 1. Loads your env file.
 2. Interpolates environment variables.
@@ -20,7 +20,7 @@ ConnectToApi=true
 
 In env.js
 ```javascript
-const envLoader = require('./js/index');
+const envLoader = require('@xpresser/env');
 const env = envLoader('path/to/local.env', {
     castBoolean: true,
     required: ['ApiKey']
@@ -34,14 +34,14 @@ The following ENV variables are REQUIRED but not found.
 [ 'ApiKey' ]
 ```
 If you uncomment the `ApiKey` line in your env file, your result will be
-```json
+```
 {
-  "AppDomain": "localhost",
-  "AppFolder": "/blog",
-  "AppPort": "3000",
-  "AppUrl": "localhost:3000/blog",
-  "ConnectToApi": true,
-  "ApiKey": "somekey"
+  AppDomain: 'localhost',
+  AppFolder: '/blog',
+  AppPort: '3000',
+  AppUrl: 'localhost:3000/blog',
+  ConnectToApi: true,
+  ApiKey: 'somekey'
 }
 ```
 
