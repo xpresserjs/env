@@ -1,0 +1,25 @@
+{
+  "name": "@xpresser/env",
+  "version": "1.0.0",
+  "description": "Parse Env Variables with option for required keys.",
+  "main": "js/index.js",
+  "repository": "https://github.com/xpresserjs/env.git",
+  "author": "xpresserjs",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "test": "node tests/test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.14",
+    "typescript": "^3.9.5"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "dotenv-expand": "^5.1.0"
+  },
+  "keywords": [
+    "xpresser",
+    "env"
+  ]
+}
