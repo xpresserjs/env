@@ -1,6 +1,6 @@
 declare const _default: (path: string, config?: {
     castBoolean?: boolean;
-    required?: [];
+    required?: any[];
 }) => any;
 /**
  * Load .env file

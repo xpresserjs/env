@@ -2,6 +2,13 @@ const fs = require("fs");
 const dotEnv = require("dotenv");
 const dotEnvExpand = require("dotenv-expand");
 
+class EnvRequiredError extends Error {
+    constructor(error: string) {
+        super(error);
+        this.name = 'ENV_REQUIRED_ERROR'
+    }
+}
+
 // Types
 type StringIsAnyObject = { [key: string]: any };
 
@@ -37,7 +44,7 @@ const castBooleans = (env: StringIsAnyObject): StringIsAnyObject => {
  */
 export = (path: string, config: {
     castBoolean?: boolean,
-    required?: []
+    required?: any[]
 } = {}) => {
 
     // Merge config with default values.
@@ -77,13 +84,42 @@ export = (path: string, config: {
      * Check if required environment variables exists
      * else throw error.
      */
-    const required = config.required;
+    let required = config.required;
     if (required && Array.isArray(required) && required.length) {
 
         const missing: string[] = [];
+        // loop through arrays to find functions
+        for (const key of required) {
+            // if a function is found, run function and add the data returned to the required array
+            if (typeof key === "function") {
+                const functionValue: any = key(env);
+
+                if (functionValue !== undefined) {
+                    // check the type of value returned
+                    const functionValueIsString = typeof functionValue === "string";
+                    const functionValueIsArray = !functionValueIsString && Array.isArray(functionValue);
+
+
+                    if (functionValue !== false && !functionValueIsString && !functionValueIsArray) {
+                        throw new EnvRequiredError('Function in {required} array must return either type: (String | Array | False)')
+                    }
+
+                    /**
+                     * If functionValue is string, add to required array
+                     * Else if is an array, merge into required array
+                     */
+                    if (functionValueIsString) {
+                        required.push(functionValue);
+                    } else if (functionValueIsArray) {
+                        required = <string[]>required.concat(functionValue);
+                    }
+                }
+            }
+        }
+
         // loop through required array and add missing keys in missing array.
         for (const key of required) {
-            if (!env.hasOwnProperty(key)) missing.push(key);
+            if (typeof key === "string" && !env.hasOwnProperty(key)) missing.push(key);
         }
 
         // If has missing required keys log error and stop process.
