@@ -1,4 +1,4 @@
-const envLoader = require('../js');
+const envLoader = require('../');
 const env = envLoader(__dirname + '/local.env', {
     castBoolean: true,
     required: [
