@@ -9,6 +9,7 @@
   "license": "MIT",
   "private": false,
   "scripts": {
+    "prepublishOnly": "npx tsc",
     "test": "node tests/test.js",
     "test-dev": "nodemon tests/test.js"
   },
