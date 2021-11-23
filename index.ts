@@ -17,7 +17,7 @@ type StringIsAnyObject = { [key: string]: any };
  * @param env
  * @returns {*}
  */
-const castBooleans = (env: StringIsAnyObject): StringIsAnyObject => {
+function castBooleans(env: StringIsAnyObject): StringIsAnyObject {
     // Get Keys of each env variable.
     const envKeys: string[] = Object.keys(env);
 
@@ -34,7 +34,7 @@ const castBooleans = (env: StringIsAnyObject): StringIsAnyObject => {
     }
 
     return env;
-};
+}
 
 /**
  * Load .env file
@@ -42,10 +42,10 @@ const castBooleans = (env: StringIsAnyObject): StringIsAnyObject => {
  * @param {{castBoolean: boolean, required: []}} config - env options.
  * @returns {*}
  */
-export = <ENV=any>(path: string, config: {
+export = function env<ENV = any>(path: string, config: {
     castBoolean?: boolean,
     required?: any[]
-} = {}): ENV => {
+} = {}): ENV {
 
     // Merge config with default values.
     config = {
