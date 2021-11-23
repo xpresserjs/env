@@ -42,10 +42,10 @@ const castBooleans = (env: StringIsAnyObject): StringIsAnyObject => {
  * @param {{castBoolean: boolean, required: []}} config - env options.
  * @returns {*}
  */
-export = (path: string, config: {
+export = <ENV=any>(path: string, config: {
     castBoolean?: boolean,
     required?: any[]
-} = {}) => {
+} = {}): ENV => {
 
     // Merge config with default values.
     config = {
@@ -133,5 +133,5 @@ export = (path: string, config: {
         }
     }
 
-    return env;
+    return env as ENV;
 };
