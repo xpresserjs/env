@@ -19,6 +19,16 @@ class EnvError extends Error {
     }
 }
 
+class EnvValue<V> {
+    value: V;
+    type: string | any[] | undefined;
+
+    constructor(value: V, type?: string | any[]) {
+        this.value = value;
+        this.type = type;
+    }
+}
+
 // Types
 type StringIsAnyObject = { [key: string]: any };
 
@@ -153,6 +163,12 @@ export function LoadEnv<ENV = any>(
     return env as ENV;
 }
 
+type Rule = {
+    def: any;
+    type: string | any[];
+    options?: any[];
+};
+
 /**
  * Env Typed Loader Function
  * @param file - Path to the .env file
@@ -164,7 +180,13 @@ export function Env<T extends object>(file: string, env: T, required?: string[])
     let $required = [] as string[];
     // Get the required keys
     for (let [key, rule] of Object.entries(env)) {
-        if (["string", "number", "boolean"].includes(rule) || Array.isArray(rule)) {
+        const { type, def } = rule as Rule;
+        if (def !== undefined) continue;
+
+        if (
+            ["string", "number", "boolean"].includes(type as string) ||
+            Array.isArray(type as string)
+        ) {
             if (!$required.includes(key)) $required.push(key);
         }
     }
@@ -175,25 +197,27 @@ export function Env<T extends object>(file: string, env: T, required?: string[])
     const data = LoadEnv(file, { castBoolean: false, required: $required });
 
     // Validate the data
-    for (const [key, rule] of Object.entries(env)) {
+    for (const [key, $rule] of Object.entries(env)) {
+        const { def, type } = $rule as Rule;
+
         let value = data[key];
 
         // if empty string, set to undefined
-        if (value === "") value = undefined;
+        if (!value || value === "") value = def;
 
-        if (Array.isArray(rule)) {
+        if (Array.isArray(type)) {
             // Validate Enum
-            if (!rule.includes(value)) {
+            if (!type.includes(value)) {
                 throw new EnvError(
-                    `${key} must be one of the following: [${rule.join(", ")}]`
+                    `${key} must be one of the following: [${type.join(", ")}]`
                 );
             }
         }
 
         // Validate Rule Type
-        else if (typeof rule === "string") {
+        else {
             // Validate for number
-            if (rule === "number") {
+            if (type === "number") {
                 if (isNaN(value)) {
                     throw new EnvError(`${key} must be a number`);
                 }
@@ -202,7 +226,7 @@ export function Env<T extends object>(file: string, env: T, required?: string[])
                 value = Number(value);
             }
             // Validate for boolean
-            else if (rule === "boolean") {
+            else if (type === "boolean") {
                 if (!["string", "boolean"].includes(typeof value))
                     throw new EnvError(`${key} must be a boolean`);
 
@@ -215,7 +239,7 @@ export function Env<T extends object>(file: string, env: T, required?: string[])
                     value === true;
             }
             // Validate for string
-            else if (rule === "string") {
+            else if (type === "string") {
                 if (typeof value !== "string")
                     throw new EnvError(`${key} must be a string`);
 
@@ -226,7 +250,7 @@ export function Env<T extends object>(file: string, env: T, required?: string[])
                 if (value.length === 0) throw new EnvError(`${key} must not be empty`);
             }
             // validate for optional string
-            else if (rule === "string?") {
+            else if (type === "string?") {
                 if (value !== undefined) {
                     // Cast to string and trim
                     value = String(value).trim();
@@ -237,7 +261,7 @@ export function Env<T extends object>(file: string, env: T, required?: string[])
                 }
             }
             // Validate for optional number
-            else if (rule === "number?") {
+            else if (type === "number?") {
                 if (value !== undefined) {
                     if (isNaN(value)) {
                         throw new EnvError(`${key} must be a number`);
@@ -252,7 +276,7 @@ export function Env<T extends object>(file: string, env: T, required?: string[])
                 let $enum = undefined;
 
                 try {
-                    $enum = JSON.parse(rule);
+                    $enum = JSON.parse(type);
                 } catch (e) {
                     throw new EnvError(`${key} must be a valid rule`);
                 }
@@ -278,34 +302,34 @@ export function Env<T extends object>(file: string, env: T, required?: string[])
 
 // Extend Function: Add `is` Method for required types
 Env.is = {
-    string() {
-        return "string" as Partial<string>;
+    string(def?: string) {
+        return { def, type: "string" } as unknown as string;
     },
 
-    number() {
-        return "number" as unknown as number;
+    number(def?: number) {
+        return { def, type: "number" } as unknown as number;
     },
 
-    boolean() {
-        return "boolean" as unknown as boolean;
+    boolean(def?: boolean) {
+        return { def, type: "boolean" } as unknown as boolean;
     },
 
-    enum<T extends string[] | readonly string[]>(options: T) {
-        return options as unknown as T[number];
+    enum<T extends any[] | readonly any[]>(options: T, def?: T[number]) {
+        return { def, type: options } as unknown as T[number];
     }
 };
 
 // Extend Function: Add `optional` Method for optional types
 Env.optional = {
-    string() {
-        return "string?" as string | undefined;
+    string(def?: string) {
+        return { def, type: "string?" } as unknown as string;
     },
 
-    number() {
-        return "number?" as unknown as number | undefined;
+    number(def?: number) {
+        return { def, type: "number?" } as unknown as number;
     },
 
-    enum<T extends string[] | readonly string[]>(options: T) {
-        return JSON.stringify(options) as unknown as T[number] | undefined;
+    enum<T extends any[] | readonly any[]>(options: T, def?: T[number]) {
+        return { def, type: JSON.stringify(options) } as unknown as T[number];
     }
 };
