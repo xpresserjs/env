@@ -80,9 +80,9 @@ The `Env` function accepts the
 import {Env} from '@xpresser/env';
 
 const env = Env('path/to/local.env', {
-    "APP_DOMAIN": Env.is.string(),
+    "APP_DOMAIN": Env.is.string('Localhost'), // can have defaults
     "APP_FOLDER": Env.is.string(),
-    "APP_PORT": Env.is.number(),
+    "APP_PORT": Env.is.number(3000),
     "APP_URL": Env.is.string(),
     
     "CONNECT_TO_API": Env.is.boolean(),
