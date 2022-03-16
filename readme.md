@@ -6,33 +6,49 @@
 3. Cast strings to boolean.
 4. Checks for required env variables.
 
-### Config
-The envLoader function accepts the `path` to the env  file as first argument and `config` object as the second argument.
 
-| Key | Type | Default | Description |
-| --- | ---- | ------- | ----------- |
-| castBoolean | `Boolean` | `true` | if enabled, all string "true" or "false" will be converted to booleans.
-| required | `Array` | `[]` | The env loader will check if all the keys defined in this array exists in your specified env file else it stops the process and logs an error. |
-
-
-### Example
-Using this **local.env** file
-```dotenv
-AppDomain=localhost
-AppFolder="/blog"
-AppPort=3000
-AppUrl="${AppDomain}:${AppPort}${AppFolder}"
-
-ConnectToApi=true
-#ApiKey="somekey"
+## Installation
+```shell
+npm i @xpresser/env
+# OR
+yarn add @xpresser/env
 ```
 
-In env.js
+## Functions
+Two functions are exported by the package.
+
+- `LoadEnv` - A function Loads your env file.
+- `Env` - A function that loads and validates your environment variables. (Typescript Friendly)
+
+## Example File
+Using this **local.env** file
+```dotenv
+APP_DOMAIN=localhost
+APP_FOLDER="/blog"
+APP_PORT=3000
+APP_URL="${AppDomain}:${AppPort}${AppFolder}"
+
+CONNECT_TO_API=true
+
+#API_KEY="somekey"
+```
+
+### LoadEnv
+The `LoadEnv` function accepts the `path` to the env file as first argument and `config` object as the second argument.
+
+The config object can have the following properties:
+
+| Key           | Type      | Default | Description                                                                                                                                    |
+|---------------|-----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `castBoolean` | `Boolean` | `true`  | if enabled, all string "true" or "false" will be converted to booleans.                                                                        |
+| `required`    | `Array`   | `[]`    | The env loader will check if all the keys defined in this array exists in your specified env file else it stops the process and logs an error. |
+
+
 ```javascript
-const envLoader = require('@xpresser/env');
+const {LoadEnv} = require('@xpresser/env');
 const env = envLoader('path/to/local.env', {
     castBoolean: true,
-    required: ['ApiKey']
+    required: ['API_KEY']
 });
 
 console.log(env);
@@ -40,35 +56,63 @@ console.log(env);
 Result.
 ```sh
 The following ENV variables are REQUIRED but not found.
-[ 'ApiKey' ]
+[ 'API_KEY' ]
 ```
 If you uncomment the `ApiKey` line in your env file, your result will be
 ```
 {
-  AppDomain: 'localhost',
-  AppFolder: '/blog',
-  AppPort: '3000',
-  AppUrl: 'localhost:3000/blog',
-  ConnectToApi: true,
-  ApiKey: 'somekey'
+  APP_DOMAIN: 'localhost',
+  APP_FOLDER: '/blog',
+  APP_PORT: '3000',
+  APP_URL: 'localhost:3000/blog',
+  CONNECT_TO_API: true,
+  API_KEY: 'somekey'
 }
 ```
-#### Required Conditions
+
+### Env
+The `Env` function accepts the
+  - `path` to the env file as first argument, 
+  - `schema` object as the second argument 
+  - `required` array as the third argument.
+
+```typescript
+import {Env} from '@xpresser/env';
+
+const env = Env('path/to/local.env', {
+    "APP_DOMAIN": Env.is.string(),
+    "APP_FOLDER": Env.is.string(),
+    "APP_PORT": Env.is.number(),
+    "APP_URL": Env.is.string(),
+    
+    "CONNECT_TO_API": Env.is.boolean(),
+    "API_KEY": Env.optional.string()
+});
+
+// `env` will be typed and validated.
+```
+
+### Required Conditions
 The required array also accepts functions to evaluate conditions.
 For example, we want to require `ApiKey` only when: `ConnectToApi===true`
 ```javascript
-const envLoader = require('@xpresser/env');
-const env = envLoader('path/to/local.env', {
-    castBoolean: true,
-    required: [
-        'ConnectToApi',
-        (envs) => {
-            if (envs['ConnectToApi'] === true) {
-                return 'ApiKey'
-            }
-        }   
-    ]
-});
+const {LoadEnv, Env} = require('@xpresser/env');
+
+const required = [
+     'ConnectToApi',
+     (envs) => {
+         if (envs['ConnectToApi'] === true) {
+             return 'ApiKey'
+         }
+     }   
+ ]
+
+const env = envLoader('path/to/local.env', {required});
+// OR
+const env = Env('path/to/local.env', {
+  // declare env variables schema
+}, required)
+
 
 console.log(env);
 ```

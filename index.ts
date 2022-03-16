@@ -1,11 +1,21 @@
-const fs = require("fs");
-const dotEnv = require("dotenv");
-const dotEnvExpand = require("dotenv-expand");
+import fs from "fs";
+import dotEnv from "dotenv";
+import dotEnvExpand from "dotenv-expand";
 
 class EnvRequiredError extends Error {
     constructor(error: string) {
         super(error);
         this.name = 'ENV_REQUIRED_ERROR'
+    }
+}
+
+/**
+ * Custom Error class
+ */
+class EnvError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "EnvError";
     }
 }
 
@@ -42,7 +52,7 @@ function castBooleans(env: StringIsAnyObject): StringIsAnyObject {
  * @param {{castBoolean: boolean, required: []}} config - env options.
  * @returns {*}
  */
-export = function env<ENV = any>(path: string, config: {
+export function LoadEnv<ENV = any>(path: string, config: {
     castBoolean?: boolean,
     required?: any[]
 } = {}): ENV {
@@ -75,7 +85,7 @@ export = function env<ENV = any>(path: string, config: {
      * Get parsed env variables
      * @type {{}}
      */
-    let env = dotEnvExpand(dotEnv.config({path})).parsed;
+    let env = dotEnvExpand(dotEnv.config({path})).parsed as any;
 
     // Cast string to booleans if castBoolean is set to true.
     if (config.castBoolean) env = castBooleans(env);
@@ -122,7 +132,7 @@ export = function env<ENV = any>(path: string, config: {
             if (typeof key === "string" && !env.hasOwnProperty(key)) missing.push(key);
         }
 
-        // If has missing required keys log error and stop process.
+        // If it has missing required keys log error and stop process.
         if (missing.length) {
             console.log(); // spacing
             console.error('The following ENV variables are REQUIRED but not found.');
@@ -134,4 +144,151 @@ export = function env<ENV = any>(path: string, config: {
     }
 
     return env as ENV;
-};
+}
+
+
+/**
+ * Env Typed Loader Function
+ * @param file - Path to the .env file
+ * @param env - Environment Declaration
+ * @constructor
+ */
+export function Env<T extends object>(file: string, env: T) {
+    let required = [] as string[];
+
+    // Get the required keys
+    for (let [key, rule] of Object.entries(env)) {
+        if (["string", "number", "boolean"].includes(rule) || Array.isArray(rule))
+            required.push(key);
+    }
+
+    // Load the .env file
+    const data = LoadEnv(file, {castBoolean: false, required});
+
+    // Validate the data
+    for (const [key, rule] of Object.entries(env)) {
+        let value = data[key];
+
+        // if empty string, set to undefined
+        if (value === '') value = undefined;
+
+        if (Array.isArray(rule)) {
+            // Validate Enum
+            if (!rule.includes(value)) {
+                throw new EnvError(`${key} must be one of the following: [${rule.join(", ")}]`);
+            }
+        }
+
+        // Validate Rule Type
+        else if (typeof rule === "string") {
+
+            // Validate for number
+            if (rule === "number") {
+
+                if (isNaN(value)) {
+                    throw new EnvError(`${key} must be a number`);
+                }
+
+                // Cast to number
+                value = Number(value);
+
+            }
+            // Validate for boolean
+            else if (rule === "boolean") {
+                if (!["string", "boolean"].includes(typeof value)) throw new EnvError(`${key} must be a boolean`);
+
+                // Cast to boolean
+                value = value === "true" || value === "TRUE" || value === "1" || value === 1 || value === true;
+            }
+            // Validate for string
+            else if (rule === "string") {
+                if (typeof value !== "string") throw new EnvError(`${key} must be a string`);
+
+                // Cast to string and trim
+                value = String(value).trim();
+
+                // Validate for string length
+                if (value.length === 0) throw new EnvError(`${key} must not be empty`);
+            }
+            // validate for optional string
+            else if (rule === "string?") {
+                if (value !== undefined) {
+                    // Cast to string and trim
+                    value = String(value).trim();
+
+                    // Validate for string length
+                    if (value.length === 0) throw new EnvError(`${key} must not be empty`);
+                }
+            }
+            // Validate for optional number
+            else if (rule === "number?") {
+                if (value !== undefined) {
+                    if (isNaN(value)) {
+                        throw new EnvError(`${key} must be a number`);
+                    }
+
+                    // Cast to number
+                    value = Number(value);
+                }
+            } else {
+                // test if is valid json
+                // A valid json means that the type is an enum?
+                let $enum = undefined;
+
+                try {
+                    $enum = JSON.parse(rule);
+                } catch (e) {
+                    throw new EnvError(`${key} must be a valid rule`);
+                }
+
+                if ($enum) {
+                    if (!Array.isArray($enum)) throw new EnvError(`${key} enum must be an array`);
+
+                    if (!$enum.includes(value)) {
+                        throw new EnvError(`${key} must be one of the following: [${$enum.join(", ")}]`);
+                    }
+                }
+            }
+        }
+
+        data[key] = value;
+    }
+
+    return data as T;
+}
+
+
+// Extend Function: Add `is` Method for required types
+Env.is = {
+    string() {
+        return 'string' as Partial<string>;
+    },
+
+    number() {
+        return 'number' as unknown as number;
+    },
+
+    boolean() {
+        return 'boolean' as unknown as boolean;
+    },
+
+    enum<T extends string[] | readonly string[]>(options: T) {
+        return options as unknown as T[number];
+    },
+
+}
+
+// Extend Function: Add `optional` Method for optional types
+Env.optional = {
+    string() {
+        return 'string?' as (string | undefined);
+    },
+
+    number() {
+        return 'number?' as unknown as (number | undefined);
+    },
+
+    enum<T extends string[] | readonly string[]>(options: T) {
+        return JSON.stringify(options) as unknown as (T[number] | undefined);
+    },
+}
