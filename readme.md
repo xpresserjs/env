@@ -9,9 +9,9 @@
 
 ## Installation
 ```shell
-npm i @xpresser/env
+npm i @xpresser/env@next
 # OR
-yarn add @xpresser/env
+yarn add @xpresser/env@next
 ```
 
 ## Functions
@@ -58,7 +58,7 @@ Result.
 The following ENV variables are REQUIRED but not found.
 [ 'API_KEY' ]
 ```
-If you uncomment the `ApiKey` line in your env file, your result will be
+If you uncomment the `API_KEY` line in your env file, your result will be
 ```
 {
   APP_DOMAIN: 'localhost',
@@ -94,15 +94,15 @@ const env = Env('path/to/local.env', {
 
 ### Required Conditions
 The required array also accepts functions to evaluate conditions.
-For example, we want to require `ApiKey` only when: `ConnectToApi===true`
+For example, we want to require `API_KEY` only when: `CONNECT_TO_API===true`
 ```javascript
 const {LoadEnv, Env} = require('@xpresser/env');
 
 const required = [
-     'ConnectToApi',
+     'CONNECT_TO_API',
      (envs) => {
-         if (envs['ConnectToApi'] === true) {
-             return 'ApiKey'
+         if (envs['CONNECT_TO_API'] === true) {
+             return 'API_KEY';
          }
      }   
  ]
@@ -116,7 +116,7 @@ const env = Env('path/to/local.env', {
 
 console.log(env);
 ```
-This will check if `Apikey` exists only if `ConnectToApi` is true.
+This will check if `API_KEY` exists only if `CONNECT_TO_API` is true.
 You can add as many functions as you want. The loader will run all of them and add returned values to the `required` array.
 
 **Note:** The function can also return an array of strings. the loader will concatenate the strings with the required array.
