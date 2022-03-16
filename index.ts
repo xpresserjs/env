@@ -1,11 +1,11 @@
 import fs from "fs";
 import dotEnv from "dotenv";
-import dotEnvExpand from "dotenv-expand";
+import { expand } from "dotenv-expand";
 
 class EnvRequiredError extends Error {
     constructor(error: string) {
         super(error);
-        this.name = 'ENV_REQUIRED_ERROR'
+        this.name = "ENV_REQUIRED_ERROR";
     }
 }
 
@@ -36,9 +36,9 @@ function castBooleans(env: StringIsAnyObject): StringIsAnyObject {
         const envKey: string = envKeys[i];
         const envVal = env[envKey].toLowerCase();
 
-        if (envVal === 'true') {
+        if (envVal === "true") {
             env[envKey] = true;
-        } else if (envVal === 'false') {
+        } else if (envVal === "false") {
             env[envKey] = false;
         }
     }
@@ -52,11 +52,13 @@ function castBooleans(env: StringIsAnyObject): StringIsAnyObject {
  * @param {{castBoolean: boolean, required: []}} config - env options.
  * @returns {*}
  */
-export function LoadEnv<ENV = any>(path: string, config: {
-    castBoolean?: boolean,
-    required?: any[]
-} = {}): ENV {
-
+export function LoadEnv<ENV = any>(
+    path: string,
+    config: {
+        castBoolean?: boolean;
+        required?: any[];
+    } = {}
+): ENV {
     // Merge config with default values.
     config = {
         castBoolean: true,
@@ -85,7 +87,7 @@ export function LoadEnv<ENV = any>(path: string, config: {
      * Get parsed env variables
      * @type {{}}
      */
-    let env = dotEnvExpand(dotEnv.config({path})).parsed as any;
+    let env = expand(dotEnv.config({ path })).parsed as any;
 
     // Cast string to booleans if castBoolean is set to true.
     if (config.castBoolean) env = castBooleans(env);
@@ -96,7 +98,6 @@ export function LoadEnv<ENV = any>(path: string, config: {
      */
     let required = config.required;
     if (required && Array.isArray(required) && required.length) {
-
         const missing: string[] = [];
         // loop through arrays to find functions
         for (const key of required) {
@@ -107,11 +108,17 @@ export function LoadEnv<ENV = any>(path: string, config: {
                 if (functionValue !== undefined) {
                     // check the type of value returned
                     const functionValueIsString = typeof functionValue === "string";
-                    const functionValueIsArray = !functionValueIsString && Array.isArray(functionValue);
+                    const functionValueIsArray =
+                        !functionValueIsString && Array.isArray(functionValue);
 
-
-                    if (functionValue !== false && !functionValueIsString && !functionValueIsArray) {
-                        throw new EnvRequiredError('Function in {required} array must return either type: (String | Array | False)')
+                    if (
+                        functionValue !== false &&
+                        !functionValueIsString &&
+                        !functionValueIsArray
+                    ) {
+                        throw new EnvRequiredError(
+                            "Function in {required} array must return either type: (String | Array | False)"
+                        );
                     }
 
                     /**
@@ -135,7 +142,7 @@ export function LoadEnv<ENV = any>(path: string, config: {
         // If it has missing required keys log error and stop process.
         if (missing.length) {
             console.log(); // spacing
-            console.error('The following ENV variables are REQUIRED but not found.');
+            console.error("The following ENV variables are REQUIRED but not found.");
             console.log(missing);
             console.log(); // spacing
 
@@ -146,63 +153,71 @@ export function LoadEnv<ENV = any>(path: string, config: {
     return env as ENV;
 }
 
-
 /**
  * Env Typed Loader Function
  * @param file - Path to the .env file
  * @param env - Environment Declaration
+ * @param required - Required Environment Variables
  * @constructor
  */
-export function Env<T extends object>(file: string, env: T) {
-    let required = [] as string[];
-
+export function Env<T extends object>(file: string, env: T, required?: string[]): T {
+    let $required = [] as string[];
     // Get the required keys
     for (let [key, rule] of Object.entries(env)) {
-        if (["string", "number", "boolean"].includes(rule) || Array.isArray(rule))
-            required.push(key);
+        if (["string", "number", "boolean"].includes(rule) || Array.isArray(rule)) {
+            if (!$required.includes(key)) $required.push(key);
+        }
     }
 
+    if (required) $required = $required.concat(required);
+
     // Load the .env file
-    const data = LoadEnv(file, {castBoolean: false, required});
+    const data = LoadEnv(file, { castBoolean: false, required: $required });
 
     // Validate the data
     for (const [key, rule] of Object.entries(env)) {
         let value = data[key];
 
         // if empty string, set to undefined
-        if (value === '') value = undefined;
+        if (value === "") value = undefined;
 
         if (Array.isArray(rule)) {
             // Validate Enum
             if (!rule.includes(value)) {
-                throw new EnvError(`${key} must be one of the following: [${rule.join(", ")}]`);
+                throw new EnvError(
+                    `${key} must be one of the following: [${rule.join(", ")}]`
+                );
             }
         }
 
         // Validate Rule Type
         else if (typeof rule === "string") {
-
             // Validate for number
             if (rule === "number") {
-
                 if (isNaN(value)) {
                     throw new EnvError(`${key} must be a number`);
                 }
 
                 // Cast to number
                 value = Number(value);
-
             }
             // Validate for boolean
             else if (rule === "boolean") {
-                if (!["string", "boolean"].includes(typeof value)) throw new EnvError(`${key} must be a boolean`);
+                if (!["string", "boolean"].includes(typeof value))
+                    throw new EnvError(`${key} must be a boolean`);
 
                 // Cast to boolean
-                value = value === "true" || value === "TRUE" || value === "1" || value === 1 || value === true;
+                value =
+                    value === "true" ||
+                    value === "TRUE" ||
+                    value === "1" ||
+                    value === 1 ||
+                    value === true;
             }
             // Validate for string
             else if (rule === "string") {
-                if (typeof value !== "string") throw new EnvError(`${key} must be a string`);
+                if (typeof value !== "string")
+                    throw new EnvError(`${key} must be a string`);
 
                 // Cast to string and trim
                 value = String(value).trim();
@@ -217,7 +232,8 @@ export function Env<T extends object>(file: string, env: T) {
                     value = String(value).trim();
 
                     // Validate for string length
-                    if (value.length === 0) throw new EnvError(`${key} must not be empty`);
+                    if (value.length === 0)
+                        throw new EnvError(`${key} must not be empty`);
                 }
             }
             // Validate for optional number
@@ -242,10 +258,13 @@ export function Env<T extends object>(file: string, env: T) {
                 }
 
                 if ($enum) {
-                    if (!Array.isArray($enum)) throw new EnvError(`${key} enum must be an array`);
+                    if (!Array.isArray($enum))
+                        throw new EnvError(`${key} enum must be an array`);
 
                     if (!$enum.includes(value)) {
-                        throw new EnvError(`${key} must be one of the following: [${$enum.join(", ")}]`);
+                        throw new EnvError(
+                            `${key} must be one of the following: [${$enum.join(", ")}]`
+                        );
                     }
                 }
             }
@@ -257,38 +276,36 @@ export function Env<T extends object>(file: string, env: T) {
     return data as T;
 }
 
-
 // Extend Function: Add `is` Method for required types
 Env.is = {
     string() {
-        return 'string' as Partial<string>;
+        return "string" as Partial<string>;
     },
 
     number() {
-        return 'number' as unknown as number;
+        return "number" as unknown as number;
     },
 
     boolean() {
-        return 'boolean' as unknown as boolean;
+        return "boolean" as unknown as boolean;
     },
 
     enum<T extends string[] | readonly string[]>(options: T) {
         return options as unknown as T[number];
-    },
-
-}
+    }
+};
 
 // Extend Function: Add `optional` Method for optional types
 Env.optional = {
     string() {
-        return 'string?' as (string | undefined);
+        return "string?" as string | undefined;
     },
 
     number() {
-        return 'number?' as unknown as (number | undefined);
+        return "number?" as unknown as number | undefined;
     },
 
     enum<T extends string[] | readonly string[]>(options: T) {
-        return JSON.stringify(options) as unknown as (T[number] | undefined);
-    },
-}
+        return JSON.stringify(options) as unknown as T[number] | undefined;
+    }
+};
