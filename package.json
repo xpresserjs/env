@@ -1,7 +1,7 @@
 {
   "name": "@xpresser/env",
   "version": "2.0.2",
-  "description": "Parse Env Variables with option for required keys.",
+  "description": "Env Parser with Validation and Required Keys",
   "main": "index.js",
   "types": "index.d.ts",
   "repository": "https://github.com/xpresserjs/env.git",
@@ -11,20 +11,23 @@
   "scripts": {
     "prepublishOnly": "npx tsc",
     "watch": "npx tsc --watch",
-    "test": "node tests/test.js",
-    "test-dev": "nodemon tests/test.js"
+    "test": "node japaFile.js",
+    "test-dev": "npx nodemon japaFile.js --ext 'ts, env'"
   },
   "devDependencies": {
-    "@types/node": "^17.0.21",
-    "prettier": "^2.6.0",
-    "typescript": "^4.6.2"
+    "japa": "^4.0.0",
+    "prettier": "^2.6.2",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.4"
   },
   "dependencies": {
     "dotenv": "^16.0.0",
-    "dotenv-expand": "^8.0.2"
+    "dotenv-expand": "^8.0.3"
   },
   "keywords": [
     "xpresser",
-    "env"
+    "env",
+    "validation",
+    "env-validation"
   ]
 }
