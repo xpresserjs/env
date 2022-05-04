@@ -17,8 +17,8 @@ yarn add @xpresser/env@next
 ## Functions
 Two functions are exported by the package.
 
-- `LoadEnv` - A function Loads your env file.
-- `Env` - A function that loads and validates your environment variables. (Typescript Friendly)
+- `LoadEnv` - Loads your env file with option for required keys.
+- `Env` - Loads and validates your environment variables with a simple schema. (Typescript Friendly)
 
 ## Example File
 Using this **local.env** file
@@ -46,7 +46,7 @@ The config object can have the following properties:
 
 ```javascript
 const {LoadEnv} = require('@xpresser/env');
-const env = envLoader('path/to/local.env', {
+const env = LoadEnv('path/to/local.env', {
     castBoolean: true,
     required: ['API_KEY']
 });
