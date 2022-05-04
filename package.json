@@ -9,7 +9,8 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "prepublishOnly": "npx tsc",
+    "prepublishOnly": "npm run build && npm run test",
+    "build": "npx tsc",
     "watch": "npx tsc --watch",
     "test": "node japaFile.js",
     "test-dev": "npx nodemon japaFile.js --ext 'ts, env'"
