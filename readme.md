@@ -10,9 +10,9 @@
 
 ## Installation
 ```shell
-npm i @xpresser/env@next
+npm i @xpresser/env
 # OR
-yarn add @xpresser/env@next
+yarn add @xpresser/env
 ```
 
 ## Functions
