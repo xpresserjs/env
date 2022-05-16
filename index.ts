@@ -244,7 +244,7 @@ function Env<T>(
         let value = data[key];
 
         // if empty string, set to undefined
-        if (!value || value === "") value = def;
+        if ((!value && typeof value !== "boolean") || value === "") value = def;
 
         if (Array.isArray(type)) {
             // Validate Enum
