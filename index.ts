@@ -135,6 +135,18 @@ function checkRequiredKeys<T extends Record<string, any>>(
 }
 
 /**
+ * Expose environment variables to process.env
+ * @param data
+ */
+function exposeToEnv<T extends Record<string, any>>(data: T) {
+    for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+            process.env[key] = data[key];
+        }
+    }
+}
+
+/**
  * Load .env file
  * @param path - path to .env file.
  * @param options - env options.
@@ -205,11 +217,13 @@ function Env<T>(
     options: {
         required?: RequiredEnvs<T>;
         endProcess?: boolean;
+        expose?: boolean;
     } = {}
 ): T {
     // Set default options
     options = {
         endProcess: true,
+        expose: false,
         ...options
     };
 
@@ -338,6 +352,11 @@ function Env<T>(
 
         data[key] = value;
     }
+
+    /**
+     * Expose environment variables to process.env
+     */
+    if (options.expose) exposeToEnv(data);
 
     return data as T;
 }

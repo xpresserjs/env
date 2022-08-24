@@ -96,4 +96,21 @@ test.group("Env", () => {
             }
         );
     });
+
+    test("Env with expose true", (assert) => {
+        const env = Env(
+            envPath,
+            {
+                APP_DOMAIN: Env.is.string(),
+                APP_FOLDER: Env.is.string(),
+                APP_PORT: Env.is.number(),
+                APP_URL: Env.is.string(),
+                CONNECT_TO_API: Env.is.boolean(),
+                CONNECT_TO_TO: Env.optional.string("d")
+            },
+            { expose: true }
+        );
+
+        assert.isTrue(Object.keys(env).every((key) => process.env.hasOwnProperty(key)));
+    });
 });
