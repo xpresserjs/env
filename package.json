@@ -1,6 +1,6 @@
 {
   "name": "@xpresser/env",
-  "version": "2.0.8",
+  "version": "2.0.9",
   "description": "Env Parser with Validation and Required Keys",
   "main": "index.js",
   "types": "index.d.ts",
