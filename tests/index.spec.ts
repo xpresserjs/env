@@ -64,8 +64,7 @@ test.group("LoadEnv", () => {
         const env = Env(null, { APP_DOMAIN: Env.is.string() }, { useProcessEnv: true });
 
         // return empty object
-        // assert.deepEqual(env, {});
-        console.log(env);
+        assert.deepEqual(env, { APP_DOMAIN: "localhost" });
     });
 });
 
