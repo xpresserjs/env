@@ -1,3 +1,4 @@
+// @ts-ignore
 import test from "japa";
 import { Env, LoadEnv } from "../index";
 
