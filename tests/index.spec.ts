@@ -46,6 +46,26 @@ test.group("LoadEnv", () => {
         assert.isString(env.CONNECT_TO_API);
         assert.equal(env.CONNECT_TO_API, "true");
     });
+
+    test("Allow Absent env file", (assert) => {
+        const env = LoadEnv(null, {
+            castBoolean: false,
+            fileIsOptional: true
+        });
+
+        // return empty object
+        assert.deepEqual(env, {});
+    });
+
+    test("Allow Absent env file with Schema", (assert) => {
+        process.env.APP_DOMAIN = "localhost";
+
+        const env = Env(null, { APP_DOMAIN: Env.is.string() }, { useProcessEnv: true });
+
+        // return empty object
+        // assert.deepEqual(env, {});
+        console.log(env);
+    });
 });
 
 test.group("Env", () => {

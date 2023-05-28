@@ -146,6 +146,41 @@ function exposeToEnv<T extends Record<string, any>>(data: T) {
     }
 }
 
+type LoadEnvOptions<T> = {
+    /**
+     * Cast string to booleans if castBoolean is set to true.
+     * @default true
+     */
+    castBoolean?: boolean;
+    /**
+     * Set required envs
+     * @default []
+     */
+    required?: RequiredEnvs<T>;
+    /**
+     * End process if required envs are not found.
+     * If set to false, it will throw an error instead.
+     * @default true
+     */
+    endProcess?: boolean;
+    /**
+     * if a key is not found in .env file, check process.env
+     */
+    useProcessEnv?: boolean;
+
+    /**
+     * Keys to get from process.env
+     */
+    processEnvKeys?: string[];
+
+    /**
+     * If set to true, it will not throw an error if .env file is not found.
+     */
+    fileIsOptional?: boolean;
+};
+
+type EnvSchemaOptions<T> = Omit<LoadEnvOptions<T>, "castBoolean"> & { expose?: boolean };
+
 /**
  * Load .env file
  * @param path - path to .env file.
@@ -153,43 +188,75 @@ function exposeToEnv<T extends Record<string, any>>(data: T) {
  * @returns {*}
  */
 function LoadEnv<T extends Record<string, any>>(
-    path: string,
-    options: {
-        castBoolean?: boolean;
-        required?: RequiredEnvs<T>;
-        endProcess?: boolean;
-    } = {}
+    path: string | null,
+    options: LoadEnvOptions<T> = {}
 ): T {
     // Merge config with default values.
     options = {
         castBoolean: true,
         required: [],
         endProcess: true,
+        useProcessEnv: false,
+        fileIsOptional: false,
+        processEnvKeys: [],
         ...options
     };
 
+    let fileExists = true;
+
+    if (path === null) {
+        fileExists = false;
+        options.fileIsOptional = true;
+    }
+
     // Check if env path exists.
-    if (!fs.existsSync(path)) {
-        throw new Error(`Env file: {${path}} does not exists!`);
+    if (fileExists && !fs.existsSync(path!)) {
+        if (options.fileIsOptional) {
+            fileExists = false;
+        } else {
+            throw new Error(`Env file: {${path}} does not exists!`);
+        }
     }
 
     // If path is a directory, automatically add '.env' to it.
     let isDir = false;
-    if (fs.lstatSync(path).isDirectory()) {
+    if (fileExists && fs.lstatSync(path!).isDirectory()) {
         path = path + "/.env";
         isDir = true;
     }
 
     // If path is a directory, Recheck if path.env exists
-    if (isDir && !fs.existsSync(path)) {
-        throw new Error(`Env file: {${path}} does not exists!`);
+    if (fileExists && isDir && !fs.existsSync(path!)) {
+        if (options.fileIsOptional) {
+            throw new Error(`Env file: {${path}} does not exists!`);
+        } else {
+            fileExists = false;
+        }
     }
 
     /**
      * Get parsed env variables
      * @type {{}}
      */
-    let env = expand(dotEnv.config({ path })).parsed as any;
+    let env: Record<string, any> = {};
+
+    if (fileExists) {
+        env = expand(dotEnv.config({ path: path! })).parsed as any;
+    } else {
+        if (options.useProcessEnv) {
+            // if processEnvKeys is set, get only those keys from process.env
+            if (options.processEnvKeys && options.processEnvKeys.length) {
+                for (const key of options.processEnvKeys) {
+                    if (process.env.hasOwnProperty(key)) {
+                        env[key] = process.env[key];
+                    }
+                }
+            } else {
+                // else get all keys from process.env
+                env = process.env;
+            }
+        }
+    }
 
     // Cast string to booleans if castBoolean is set to true.
     if (options.castBoolean) env = castBooleans(env);
@@ -198,7 +265,7 @@ function LoadEnv<T extends Record<string, any>>(
      * Check if required environment variables exists
      * else throw error.
      */
-    checkRequiredKeys(env, options);
+    checkRequiredKeys(env as any, options);
 
     return env as T;
 }
@@ -211,14 +278,10 @@ function LoadEnv<T extends Record<string, any>>(
  * @constructor
  */
 
-function Env<T>(
-    file: string,
+function Env<T extends Object>(
+    file: string | null,
     schema: T,
-    options: {
-        required?: RequiredEnvs<T>;
-        endProcess?: boolean;
-        expose?: boolean;
-    } = {}
+    options: EnvSchemaOptions<T> = {}
 ): T {
     // Set default options
     options = {
@@ -248,7 +311,10 @@ function Env<T>(
     const data = LoadEnv(file, {
         castBoolean: true,
         required: $required,
-        endProcess: options.endProcess
+        endProcess: options.endProcess,
+        fileIsOptional: options.fileIsOptional,
+        useProcessEnv: options.useProcessEnv,
+        processEnvKeys: Object.keys(schema)
     }) as any;
 
     // Validate the data
